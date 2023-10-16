@@ -1,7 +1,5 @@
 import { Module, Provider } from '@nestjs/common';
 import { KafkaModule, KafkaService } from '../../kafka';
-import { KafkaConfigService } from '../../kafka/kafka-config.service';
-import { ConfigService } from '@nestjs/config';
 
 const registerInstances = ['KAFKA'];
 
@@ -15,7 +13,7 @@ if ('true' === process.env.KAFKA_ENABLED) {
   for (const instance of registerInstances) {
     const provider: Provider = {
       provide: instance,
-      useValue: new KafkaService(undefined, new KafkaConfigService(new ConfigService())),
+      useValue: new KafkaService(undefined, undefined),
     };
 
     moduleExports.push(provider);

@@ -5,6 +5,7 @@ const KAFKA_CONFIG_PREFIX = 'KAFKA';
 
 export const KafkaConfigs = {
   BootstrapServers: `${KAFKA_CONFIG_PREFIX}_BOOTSTRAP_SERVERS`,
+  AutoConnect: `${KAFKA_CONFIG_PREFIX}_AUTO_CONNECT`,
   SchemaRegistryUrl: `${KAFKA_CONFIG_PREFIX}_SCHEMA_REGISTRY_URL`,
   SchemaRegistryUser: `${KAFKA_CONFIG_PREFIX}_SCHEMA_REGISTRY_USER`,
   SchemaRegistryPassword: `${KAFKA_CONFIG_PREFIX}_SCHEMA_REGISTRY_PASSWORD`,
@@ -27,6 +28,10 @@ export class KafkaConfigService {
 
   get bootstrapServers(): string[] {
     return this._configService.get<string>(KafkaConfigs.BootstrapServers, 'localhost:9092').trim().split(',');
+  }
+
+  get autoConnect(): boolean {
+    return this._configService.get<boolean>(KafkaConfigs.AutoConnect, false);
   }
 
   get registryHost(): string {

@@ -20,7 +20,7 @@ export interface IKafkaService extends OnModuleDestroy, OnApplicationBootstrap {
 }
 
 @Injectable()
-export class KafkaService implements IKafkaService {
+export class KafkaService implements IKafkaService, OnApplicationBootstrap, OnModuleDestroy {
   private readonly _kafka: Kafka;
   private readonly _producer: Producer;
   private readonly _consumer: Consumer;
@@ -35,6 +35,8 @@ export class KafkaService implements IKafkaService {
   protected topicOffsets: Map<string, (SeekEntry & { high: string; low: string })[]> = new Map();
 
   constructor(logger: LoggerService, private readonly _kafkaConfigService: KafkaConfigService) {
+    if (!_kafkaConfigService) return;
+
     const options = this.buildKafkaOptions(_kafkaConfigService);
     const { client, consumer: consumerConfig, producer: producerConfig, postfixId, autoConnect } = options;
 
@@ -68,9 +70,9 @@ export class KafkaService implements IKafkaService {
   }
 
   async connect(): Promise<void> {
-    await this._consumer.connect();
-    await this._producer.connect();
-    await this._admin.connect();
+    await this._consumer?.connect();
+    await this._producer?.connect();
+    await this._admin?.connect();
 
     await this.getTopicOffsets();
 
@@ -83,9 +85,9 @@ export class KafkaService implements IKafkaService {
   }
 
   async disconnect(): Promise<void> {
-    await this._consumer.disconnect();
-    await this._producer.disconnect();
-    await this._admin.disconnect();
+    await this._consumer?.disconnect();
+    await this._producer?.disconnect();
+    await this._admin?.disconnect();
   }
 
   async restart(reason?: string) {
@@ -190,6 +192,7 @@ export class KafkaService implements IKafkaService {
         },
       },
       producer: {},
+      autoConnect: kafkaConfigService.autoConnect,
     };
   }
 
@@ -204,7 +207,7 @@ export class KafkaService implements IKafkaService {
 
     for await (const topic of topics) {
       try {
-        const topicOffsets = await this._admin.fetchTopicOffsets(topic);
+        const topicOffsets = await this._admin?.fetchTopicOffsets(topic);
         this.topicOffsets.set(topic, topicOffsets);
       } catch (e) {
         this._logger.error(KafkaService, 'Error fetching topic offset: ' + topic);
@@ -213,12 +216,12 @@ export class KafkaService implements IKafkaService {
   }
 
   protected async subscribe(topic: string, fromBeginning = false): Promise<void> {
-    await this._consumer.subscribe({ topic, fromBeginning });
+    await this._consumer?.subscribe({ topic, fromBeginning });
   }
 
   private async bindAllTopicToConsumer(): Promise<void> {
     const runConfig = this._options.consumerRunConfig ? this._options.consumerRunConfig : {};
-    await this._consumer.run({
+    await this._consumer?.run({
       ...runConfig,
       autoCommit: this._kafkaConfigService.enableAutoCommit,
       autoCommitInterval: this._kafkaConfigService.autoCommitInterval,
@@ -257,7 +260,7 @@ export class KafkaService implements IKafkaService {
         let seek = String(seekPoint);
         if (seekPoint === 'earliest') seek = topicOffset.low;
         if (seekPoint === 'latest') seek = topicOffset.high;
-        this._consumer.seek({
+        this._consumer?.seek({
           topic,
           partition: topicOffset.partition,
           offset: seek,
@@ -271,7 +274,7 @@ export class KafkaService implements IKafkaService {
     if (isEmpty(topic) || partition < 0 || offset < 0) return undefined;
 
     return async () => {
-      await this._consumer.commitOffsets([{ topic, partition, offset: String(offset) }]);
+      await this._consumer?.commitOffsets([{ topic, partition, offset: String(offset) }]);
       this._logger.debug(KafkaService, `Committed to topic ${topic}, partition ${partition}, offset ${offset}`);
     };
   }
