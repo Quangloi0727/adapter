@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { LoggerFactory } from './shared/providers/logger/logger.factory';
+import { LoggerFactory } from './shared/providers';
 import { LoggerService } from './shared/logging';
 
 @Injectable()

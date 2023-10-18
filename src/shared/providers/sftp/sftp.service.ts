@@ -27,11 +27,21 @@ export class SftpService {
 
     this._sftpService = sftpService;
     this._baseDir = sftpConfig.baseDir;
+
+    this._log.info(`SFTP baseDir: ${this._baseDir}`);
   }
 
-  async mkdir(path: string): Promise<boolean> {
+  async mkdir(...path: string[]): Promise<boolean> {
     try {
-      await this._sftpService.makeDirectory(path, true);
+      let recursivePath = join(this._baseDir, ...path);
+      if (recursivePath.startsWith('/')) {
+        this._log.warn(`Remove leading slash from path ${recursivePath}`);
+        recursivePath = recursivePath.substring(1);
+      }
+
+      this._log.debug(`Make directory ${recursivePath} in sftp server`);
+
+      await this._sftpService.makeDirectory(recursivePath, true);
       return true;
     } catch (e) {
       this._log.error(`Cannot make directory ${path} in sftp server. Error ${e?.message}`);
