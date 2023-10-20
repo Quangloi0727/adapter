@@ -1,17 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { existsSync, mkdirSync } from 'fs';
 import { Workbook } from 'exceljs';
-import { exportDir } from '../constants';
-import { getDayMonthYear } from '../common/functions';
+import { getDayMonthYear } from '../utils/functions';
 import { SftpService } from '../shared/providers';
 import { ConfigService } from '@nestjs/config';
+import * as path from 'path';
 const { fileHeader } = require('../../config/config-map.json');
 
 @Injectable()
 export class ExportExcelService {
+  private readonly _exportDir: string;
   constructor(
     private readonly _sftpService: SftpService,
-  ) {}
+    private readonly _configService: ConfigService
+  ) {
+    this._exportDir = this._configService.get('EXPORT_DIR');
+  }
 
   async exportFileCsv(data) {
     const workbook = new Workbook();
@@ -37,10 +41,10 @@ export class ExportExcelService {
 
     workSheet.addRows(data);
 
-    const dir = `${exportDir}/${getDayMonthYear().year}/${getDayMonthYear().month}/${getDayMonthYear().day}`;
+    const dir = path.join(this._exportDir, getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day);
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
-    await this._sftpService.mkdirIfNotExists(`${getDayMonthYear().year}/${getDayMonthYear().month}/${getDayMonthYear().day}/recording`);
+    await this._sftpService.mkdirIfNotExists(path.join(getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day, 'recording'));
 
     const filePath = `${dir}/${getDayMonthYear().valueOf}.csv`;
     return workbook.xlsx.writeFile(filePath);

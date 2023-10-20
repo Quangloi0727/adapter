@@ -5,13 +5,13 @@ import { LoggerService } from '../shared/logging';
 import { LoggerFactory } from '../shared/providers';
 import axios from 'axios';
 import { IBodyRequest } from './recording.interface';
-import { exportDir, maxResultCount } from '../constants';
 import * as moment from 'moment';
 import { ExportExcelService } from '../export-excel/export-excel.service';
 import * as fs from 'fs-extra';
 import { existsSync, mkdirSync } from 'fs';
-import { getDayMonthYear } from '../common/functions';
+import { getDayMonthYear } from '../utils/functions';
 import { RecordingStoreService } from './recording-store.service';
+import * as path from 'path';
 
 @Injectable()
 export class RecordingService implements OnModuleInit, OnModuleDestroy {
@@ -21,6 +21,8 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
   private readonly _urlGetData: String;
   private readonly _prefixRecording: String;
   private readonly _tenantId: String;
+  private readonly _maxResultCount: number;
+  private readonly _exportDir: string;
 
   constructor(
     loggerFactory: LoggerFactory,
@@ -34,6 +36,8 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     this._urlGetData = this._configService.get("URL_GET_DATA");
     this._prefixRecording = this._configService.get("PREFIX_RECORDING");
     this._tenantId = this._configService.get("TENANT_ID") || '102';
+    this._maxResultCount = this._configService.get("MAX_RESULT_COUNT") || 100;
+    this._exportDir = this._configService.get("EXPORT_DIR");
     this._refreshJob = CronJob.from({
       cronTime: timeJob,
       onTick: async () => {
@@ -70,7 +74,7 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
       if (!dataGetFromCrm.length) return;
       await this._exportExcelService.exportFileCsv(dataGetFromCrm);
       await this.downloadFileRecording(dataGetFromCrm);
-      //setTimeout(async () => await this._recordingStoreService.uploadToServer(), 3000);
+      setTimeout(async () => await this._recordingStoreService.uploadToServer(), 3000);
     } catch (e) {
       this._log.error(`Job error: ${e.message}`);
     }
@@ -78,8 +82,8 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
 
   bodyRequest(page) {
     const body: IBodyRequest = {
-      maxResultCount: maxResultCount || 100,
-      skipCount: page * maxResultCount || page * 100,
+      maxResultCount: this._maxResultCount,
+      skipCount: page * this._maxResultCount,
       startTime: moment(new Date('2023-10-18')).subtract(1, 'days').startOf('day').format("YYYY-MM-DD HH:mm:ss"),
       endTime: moment(new Date('2023-10-18')).subtract(1, 'days').endOf('day').format("YYYY-MM-DD HH:mm:ss")
     };
@@ -109,7 +113,7 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
         const response = await axios.get(`${this._prefixRecording}/${RecordingUrl}`, { responseType: 'stream' });
 
         if (response.status === 200) {
-          const destinationPath = `${exportDir}/${getDayMonthYear().year}/${getDayMonthYear().month}/${getDayMonthYear().day}/recording`;
+          const destinationPath = path.join(this._exportDir, getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day, 'recording');
           if (!existsSync(destinationPath)) mkdirSync(destinationPath, { recursive: true });
 
           await fs.ensureDir(destinationPath);

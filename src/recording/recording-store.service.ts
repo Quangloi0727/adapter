@@ -5,10 +5,10 @@ import { isEmpty } from '@nestjs/common/utils/shared.utils';
 import { existsSync, rmSync } from 'fs';
 import { SftpService } from '../shared/providers';
 import { getFileName, getFiles } from '../utils/file.utils';
-import { exportDir } from '../constants';
-import { getDayMonthYear } from '../common/functions';
+import { getDayMonthYear } from '../utils/functions';
 import { ConfigService } from '@nestjs/config';
 import { settledAll } from '../utils/promise.utils';
+import * as path from 'path';
 
 export interface UploadStats {
   key: string;
@@ -22,6 +22,7 @@ export class RecordingStoreService {
   private readonly _maxScanFile: number;
   private readonly _batchSize: number;
   private readonly _batchDelayMs: number;
+  private readonly _exportDir: string;
 
   constructor(
     loggerFactory: LoggerFactory,
@@ -30,8 +31,9 @@ export class RecordingStoreService {
   ) {
     this._log = loggerFactory.createLogger(RecordingStoreService);
     this._maxScanFile = this._configService.get("MAX_SCAN_FILE") || 1024;
-    this._batchSize = this._configService.get("BATCH_SIZE") || 1024;
-    this._batchDelayMs = this._configService.get("BATCH_DELAY_MS") || 1024;
+    this._batchSize = this._configService.get("BATCH_SIZE") || 10;
+    this._batchDelayMs = this._configService.get("BATCH_DELAY_MS") || 1000;
+    this._exportDir = this._configService.get("EXPORT_DIR");
   }
 
   uploadTask(path: string, key?: string): Promise<UploadStats> {
@@ -68,11 +70,11 @@ export class RecordingStoreService {
   }
 
   async uploadToServer() {
-    const _baseDirRecording = `${exportDir}/${getDayMonthYear().year}/${getDayMonthYear().month}/${getDayMonthYear().day}/recording`;
+    const _baseDirRecording = path.join(this._exportDir, getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day, 'recording');
     const wavFiles = await getFiles('**/*.wav', _baseDirRecording, this._maxScanFile, []);
     this._log.log(`Found {} wav file(s) in {}`, wavFiles.length, _baseDirRecording);
 
-    const _baseDirCsv = `${exportDir}/${getDayMonthYear().year}/${getDayMonthYear().month}/${getDayMonthYear().day}`;
+    const _baseDirCsv = path.join(this._exportDir, getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day,);
     const csvFiles = await getFiles('**/*.csv', _baseDirCsv, this._maxScanFile, []);
     this._log.log(`Found {} csv file(s) in {}`, csvFiles.length, _baseDirCsv);
 
