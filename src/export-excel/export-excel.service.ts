@@ -46,7 +46,7 @@ export class ExportExcelService {
 
     await this._sftpService.mkdirIfNotExists(path.join(getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day, 'recording'));
 
-    const filePath = `${path.join(dir, getDayMonthYear().valueOf.toString())}.csv`;
+    const filePath = path.join(dir, `${getDayMonthYear().valueOf.toString()}.csv`);
     return workbook.xlsx.writeFile(filePath);
   }
 

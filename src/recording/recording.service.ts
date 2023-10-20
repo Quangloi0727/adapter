@@ -84,8 +84,8 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     const body: IBodyRequest = {
       maxResultCount: this._maxResultCount,
       skipCount: page * this._maxResultCount,
-      startTime: moment(new Date('2023-10-18')).subtract(1, 'days').startOf('day').format("YYYY-MM-DD HH:mm:ss"),
-      endTime: moment(new Date('2023-10-18')).subtract(1, 'days').endOf('day').format("YYYY-MM-DD HH:mm:ss")
+      startTime: moment(new Date()).subtract(1, 'days').startOf('day').format("YYYY-MM-DD HH:mm:ss"),
+      endTime: moment(new Date()).subtract(1, 'days').endOf('day').format("YYYY-MM-DD HH:mm:ss")
     };
     return body;
   }
