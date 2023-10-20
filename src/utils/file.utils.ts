@@ -1,4 +1,4 @@
-import { existsSync, statSync, readFile as fsReadFile, Stats, mkdirSync } from 'fs';
+import { existsSync, statSync, readFile as fsReadFile, Stats } from 'fs';
 import * as globStream from 'glob-stream';
 import { dirname, extname, join, sep } from 'path';
 import { isEmpty } from '@nestjs/common/utils/shared.utils';
@@ -124,7 +124,7 @@ export const normalizeRegex = (short = false): RegExp => {
   return pattern;
 };
 
-export const getNormalizePath = (path: string, stats?: Stats | { mtime: Date }): string => {
+export const getNormalizePath = (path: string, stats?: Stats | { mtime: Date; }): string => {
   if (!path) return path;
 
   const shortMatches = path.match(normalizeRegex(true));

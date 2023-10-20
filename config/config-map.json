@@ -1,0 +1,17 @@
+{
+    "fileHeader": {
+        "columns": [
+            { "header": "CID_NUMBER", "key": "ContactId", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "TICKET_NUMBER", "key": "TicketId", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "AGT_CODE", "key": "AGT_CODE", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "APPLICATIONS", "key": "APPLICATIONS", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "LABEL", "key": "LABEL", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "FAQ_IND", "key": "FAQ_IND", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "PHONE_NUMBER", "key": "PhoneNumber", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "CRS_NAME", "key": "TicketCreator", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "CALL_TIME", "key": "StartedTime", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "CALL_ID", "key": "CallId", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "FILE_NM", "key": "RecordingUrl", "width": 15, "style": { "font": { "name": "Arial" } } }
+        ]
+    }
+}
