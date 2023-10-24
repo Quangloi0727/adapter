@@ -5,19 +5,22 @@ import { getDayMonthYear } from '../utils/functions';
 import { SftpService } from '../shared/providers';
 import { ConfigService } from '@nestjs/config';
 import * as path from 'path';
-const { fileHeader } = require('../../config/config-map.json');
+import { readJsonFile } from '../utils/file.utils';
 
 @Injectable()
 export class ExportExcelService {
   private readonly _exportDir: string;
+  private readonly _fileHeaderDir: string;
   constructor(
     private readonly _sftpService: SftpService,
     private readonly _configService: ConfigService
   ) {
     this._exportDir = this._configService.get('EXPORT_DIR');
+    this._fileHeaderDir = this._configService.get('FILE_HEADER_DIR');
   }
 
   async exportFileCsv(data) {
+    const { fileHeader } = await readJsonFile(this._fileHeaderDir);
     const workbook = new Workbook();
     const headers = fileHeader.columns;
     const workSheet = workbook.addWorksheet('data');
@@ -49,5 +52,5 @@ export class ExportExcelService {
     const filePath = path.join(dir, `${getDayMonthYear().valueOf.toString()}.csv`);
     return workbook.xlsx.writeFile(filePath);
   }
-
+  
 };

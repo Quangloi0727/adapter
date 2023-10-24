@@ -1,4 +1,4 @@
-import { existsSync, statSync, readFile as fsReadFile, Stats } from 'fs';
+import { existsSync, statSync, readFile as fsReadFile, Stats, readFileSync } from 'fs';
 import * as globStream from 'glob-stream';
 import { dirname, extname, join, sep } from 'path';
 import { isEmpty } from '@nestjs/common/utils/shared.utils';
@@ -150,3 +150,13 @@ export const getNormalizePath = (path: string, stats?: Stats | { mtime: Date; })
 
   return path;
 };
+
+export async function readJsonFile(filePath: string): Promise<any> {
+  try {
+    const fileContent = readFileSync(filePath, 'utf8');
+    const data = JSON.parse(fileContent);
+    return data;
+  } catch (error) {
+    throw new Error('Error reading and parsing JSON file: ' + error.message);
+  }
+}
