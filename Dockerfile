@@ -10,7 +10,7 @@ RUN npm config set fetch-retries 5
 RUN npm config set fetch-retry-mintimeout 600000
 RUN npm config set fetch-retry-maxtimeout 1200000
 RUN npm config set fetch-timeout 1800000
-RUN npm i
+RUN npm i --force
 RUN npm run build
 
 USER node
