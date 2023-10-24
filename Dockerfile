@@ -19,7 +19,7 @@ FROM node:18-alpine AS production
 
 WORKDIR /opt/adapter
 
-COPY --chown=node:node --from=build /usr/src/app/build /opt/adapter
+COPY --chown=node:node --from=build /usr/src/app/dist /opt/adapter
 COPY --chown=node:node --from=build /usr/src/app/node_modules /opt/adapter/node_modules
 
 ENV TZ=Asia/Ho_Chi_Minh
