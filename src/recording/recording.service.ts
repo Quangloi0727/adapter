@@ -54,13 +54,14 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  async startJob() {
+  async startJob(body?: any) {
     try {
       this._log.info('Job start !');
       let count = 0;
       let dataGetFromCrm = [];
       do {
-        const data = this.bodyRequest(count);
+        const { startTime, endTime } = body;
+        const data = this.bodyRequest(count, startTime, endTime);
         const headers = this.paramsHeader();
         const response = await axios.post(`${this._urlGetData}`, data, { headers });
         if (response?.data?.result?.length) {
@@ -80,12 +81,12 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  bodyRequest(page) {
+  bodyRequest(page, startTime?, endTime?) {
     const body: IBodyRequest = {
       maxResultCount: this._maxResultCount,
       skipCount: page * this._maxResultCount,
-      startTime: moment(new Date()).subtract(1, 'days').startOf('day').format("YYYY-MM-DD HH:mm:ss"),
-      endTime: moment(new Date()).subtract(1, 'days').endOf('day').format("YYYY-MM-DD HH:mm:ss")
+      startTime: startTime ? startTime : moment(new Date()).subtract(1, 'days').startOf('day').format("YYYY-MM-DD HH:mm:ss"),
+      endTime: endTime ? endTime : moment(new Date()).subtract(1, 'days').endOf('day').format("YYYY-MM-DD HH:mm:ss")
     };
     return body;
   }

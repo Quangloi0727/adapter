@@ -1,0 +1,18 @@
+{
+    "fileHeader": {
+        "columns": [
+            { "header": "Thời gian bắt đầu", "key": "time", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "Mã cuộc gọi", "key": "journeyRefId", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "Số điện thoại", "key": "phoneNumber", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "Nhóm làm việc", "key": "workGroup", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "Nhân viên", "key": "employee", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "Trạng thái", "key": "callStatus", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "Chi tiết", "key": "callStatusReason", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "Hướng", "key": "callType", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "Thời gian đợi", "key": "waitTime", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "Thời lượng", "key": "duration", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "File ghi âm", "key": "recordingUrl", "width": 15, "style": { "font": { "name": "Arial" } } },
+            { "header": "Số extension", "key": "agentExtensionNumber", "width": 15, "style": { "font": { "name": "Arial" } } }
+        ]
+    }
+}
