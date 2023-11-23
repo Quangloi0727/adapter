@@ -5,7 +5,7 @@ import { LoggerService } from 'src/shared/logging';
 import { LoggerFactory } from '../logger';
 import { SftpConfigService } from './sftp-config.service';
 import { Metadata, UploadStat } from './sftp.interface';
-import { getFileName, getRelPath, readFile } from 'src/utils/file.utils';
+import { getFileName, getRelPath, readFile } from '../../../utils/file.utils';
 import { isEmpty } from '@nestjs/common/utils/shared.utils';
 import { ConfigService } from '@nestjs/config';
 
