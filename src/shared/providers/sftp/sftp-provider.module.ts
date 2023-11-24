@@ -3,8 +3,7 @@ import { SftpModule as NestSftpModule } from 'nest-sftp';
 import { SftpConfigService } from './sftp-config.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SftpService } from './sftp.service';
-import { LoggerProviderModule } from '../logger';
-import * as Client from 'ssh2-sftp-client';
+import { LoggerFactory, LoggerProviderModule } from '../logger';
 
 @Global()
 @Module({
@@ -13,7 +12,10 @@ import * as Client from 'ssh2-sftp-client';
     ConfigModule.forRoot(),
     NestSftpModule.forRootAsync(
       {
-        useFactory: (configService: ConfigService) => {
+        useFactory: (configService: ConfigService, loggerFactory: LoggerFactory) => {
+
+          const logger = loggerFactory.createLogger(SftpProviderModule);
+
           const sftpConfigService = new SftpConfigService(configService);
           const sftpConfig = {
             host: sftpConfigService.host,
@@ -22,22 +24,13 @@ import * as Client from 'ssh2-sftp-client';
             password: sftpConfigService.password,
             privateKey: sftpConfigService.privateKey,
             passphrase: sftpConfigService.passphrase,
+            debug: (msg: string, ...args: any) => logger.debug(msg, args)
           };
-          const sftpClient = new Client();
-
-          sftpClient
-            .connect(sftpConfig)
-            .then(() => {
-              console.log('SFTP Connected !');
-            })
-            .catch((error) => {
-              console.error('SFTP Connection Error:', error);
-            });
 
           return sftpConfig;
         },
-        inject: [ConfigService],
-        imports: [ConfigModule.forRoot()],
+        inject: [ConfigService, LoggerFactory],
+        imports: [ConfigModule.forRoot(), LoggerProviderModule],
       },
       false,
     ),
