@@ -60,8 +60,7 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
       let count = 0;
       let dataGetFromCrm = [];
       do {
-        const { startTime, endTime } = body;
-        const data = this.bodyRequest(count, startTime, endTime);
+        const data = this.bodyRequest(count, body?.startTime, body?.endTime);
         const headers = this.paramsHeader();
         const response = await axios.post(`${this._urlGetData}`, data, { headers });
         if (response?.data?.result?.length) {
