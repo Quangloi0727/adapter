@@ -108,17 +108,17 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     this._log.info(`Prefix recording is: ${this._prefixRecording}`);
     const destinationPath = path.join(this._exportDir, getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day, 'recording');
     if (!existsSync(destinationPath)) mkdirSync(destinationPath, { recursive: true });
-    
+
     const downloadPromises = datas.map(async (data) => {
-      const { RecordingUrl } = data;
-      if (RecordingUrl && RecordingUrl !== '' && RecordingUrl !== null && RecordingUrl !== undefined) {
-        const response = await axios.get(`${this._prefixRecording}/${RecordingUrl}`, { responseType: 'stream' });
+      const { recordingUrl } = data;
+      if (recordingUrl && recordingUrl !== '' && recordingUrl !== null && recordingUrl !== undefined) {
+        const response = await axios.get(`${this._prefixRecording}/${recordingUrl}`, { responseType: 'stream' });
 
         if (response.status === 200) {
           if (!existsSync(destinationPath)) mkdirSync(destinationPath, { recursive: true });
 
           await fs.ensureDir(destinationPath);
-          const fileName = RecordingUrl.split('/');
+          const fileName = recordingUrl.split('/');
 
           const writer = fs.createWriteStream(`${destinationPath}/${fileName[fileName.length - 1]}`);
           response.data.pipe(writer);
