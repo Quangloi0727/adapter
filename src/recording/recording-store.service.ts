@@ -69,12 +69,12 @@ export class RecordingStoreService {
     });
   }
 
-  async uploadToServer() {
-    const _baseDirRecording = path.join(this._exportDir, getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day, 'recording');
+  async uploadToServer(startTime?) {
+    const _baseDirRecording = path.join(this._exportDir, getDayMonthYear(startTime).year, getDayMonthYear(startTime).month, getDayMonthYear(startTime).day, 'recording');
     const wavFiles = await getFiles('**/*.wav', _baseDirRecording, this._maxScanFile, []);
     this._log.log(`Found {} wav file(s) in {}`, wavFiles.length, _baseDirRecording);
 
-    const _baseDirCsv = path.join(this._exportDir, getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day,);
+    const _baseDirCsv = path.join(this._exportDir, getDayMonthYear(startTime).year, getDayMonthYear(startTime).month, getDayMonthYear(startTime).day,);
     const csvFiles = await getFiles('**/*.csv', _baseDirCsv, this._maxScanFile, []);
     this._log.log(`Found {} csv file(s) in {}`, csvFiles.length, _baseDirCsv);
 

@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable, OnModuleDestroy, OnModuleInit } 
 import { ConfigService } from '@nestjs/config';
 import { CronJob } from 'cron';
 import { LoggerService } from '../shared/logging';
-import { LoggerFactory } from '../shared/providers';
+import { LoggerFactory, SftpConfigService } from '../shared/providers';
 import axios from 'axios';
 import { IBodyRequest } from './recording.interface';
 import * as moment from 'moment';
@@ -12,6 +12,7 @@ import { existsSync, mkdirSync } from 'fs';
 import { getDayMonthYear } from '../utils/functions';
 import { RecordingStoreService } from './recording-store.service';
 import * as path from 'path';
+import * as SftpClient from 'ssh2-sftp-client';
 
 @Injectable()
 export class RecordingService implements OnModuleInit, OnModuleDestroy {
@@ -23,6 +24,8 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
   private readonly _tenantId: String;
   private readonly _maxResultCount: number;
   private readonly _exportDir: string;
+  private _sftp: SftpClient;
+  private _sftpConfigService;
 
   constructor(
     loggerFactory: LoggerFactory,
@@ -30,7 +33,8 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     private readonly _exportExcelService: ExportExcelService,
     private readonly _recordingStoreService: RecordingStoreService,
   ) {
-
+    this._sftpConfigService = new SftpConfigService(this._configService);
+    this._sftp = new SftpClient();
     this._log = loggerFactory.createLogger(RecordingService);
     const timeJob = this._configService.get("TIME_START_JOB") || '0 0 1 * * *';
     this._urlGetData = this._configService.get("URL_GET_DATA");
@@ -72,11 +76,29 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
       } while (count !== 0);
       this._log.info(`Found ${dataGetFromCrm.length} data !`);
       if (!dataGetFromCrm.length) return;
-      await this._exportExcelService.exportFileCsv(dataGetFromCrm);
-      await this.downloadFileRecording(dataGetFromCrm);
-      setTimeout(async () => await this._recordingStoreService.uploadToServer(), 3000);
+      await this._exportExcelService.exportFileCsv(dataGetFromCrm, body?.startTime);
+      await this.downloadFileRecording(dataGetFromCrm, body?.startTime);
+      // call function connect when start push to sftp
+      await this.connectSftp({
+        host: this._sftpConfigService.host,
+        port: this._sftpConfigService.port,
+        username: this._sftpConfigService.username,
+        password: this._sftpConfigService.password,
+        privateKey: this._sftpConfigService.privateKey,
+        passphrase: this._sftpConfigService.passphrase,
+      });
+      setTimeout(async () => await this._recordingStoreService.uploadToServer(body?.startTime), 3000);
     } catch (e) {
       this._log.error(`Job error: ${e.message}`);
+    }
+  }
+
+  async connectSftp(config): Promise<any> {
+    try {
+      await this._sftp.connect(config);
+      this._log.info(`Reconnect sftp successful !`);
+    } catch (error) {
+      this._log.error(`Reconnect sftp error is: ${error.message}`);
     }
   }
 
@@ -104,9 +126,9 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     this._refreshJob.stop();
   }
 
-  async downloadFileRecording(datas) {
+  async downloadFileRecording(datas, startTime?) {
     this._log.info(`Prefix recording is: ${this._prefixRecording}`);
-    const destinationPath = path.join(this._exportDir, getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day, 'recording');
+    const destinationPath = path.join(this._exportDir, getDayMonthYear(startTime).year, getDayMonthYear(startTime).month, getDayMonthYear(startTime).day, 'recording');
     if (!existsSync(destinationPath)) mkdirSync(destinationPath, { recursive: true });
 
     const downloadPromises = datas.map(async (data) => {

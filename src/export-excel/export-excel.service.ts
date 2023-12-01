@@ -19,7 +19,7 @@ export class ExportExcelService {
     this._fileHeaderDir = this._configService.get('FILE_HEADER_DIR');
   }
 
-  async exportFileCsv(data) {
+  async exportFileCsv(data, startTime?) {
     const { fileHeader } = await readJsonFile(this._fileHeaderDir);
     const workbook = new Workbook();
     const headers = fileHeader.columns;
@@ -44,13 +44,13 @@ export class ExportExcelService {
 
     workSheet.addRows(data);
 
-    const dir = path.join(this._exportDir, getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day);
+    const dir = path.join(this._exportDir, getDayMonthYear(startTime).year, getDayMonthYear(startTime).month, getDayMonthYear(startTime).day);
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
-    await this._sftpService.mkdirIfNotExists(path.join(getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day, 'recording'));
+    await this._sftpService.mkdirIfNotExists(path.join(getDayMonthYear(startTime).year, getDayMonthYear(startTime).month, getDayMonthYear(startTime).day, 'recording'));
 
-    const filePath = path.join(dir, `${getDayMonthYear().valueOf.toString()}.csv`);
+    const filePath = path.join(dir, `${getDayMonthYear(startTime).valueOf.toString()}.csv`);
     return workbook.xlsx.writeFile(filePath);
   }
-  
+
 };
