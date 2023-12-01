@@ -70,14 +70,14 @@ export class RecordingStoreService {
   }
 
   async uploadToServer(startTime?) {
-    const _baseDirRecording = path.join(this._exportDir, getDayMonthYear(startTime).year, getDayMonthYear(startTime).month, getDayMonthYear(startTime).day, 'recording');
+    const { year, month, day } = getDayMonthYear(startTime);
+    const _baseDirRecording = path.join(this._exportDir, year, month, day, 'recording');
     const wavFiles = await getFiles('**/*.wav', _baseDirRecording, this._maxScanFile, []);
     this._log.log(`Found {} wav file(s) in {}`, wavFiles.length, _baseDirRecording);
 
-    const _baseDirCsv = path.join(this._exportDir, getDayMonthYear(startTime).year, getDayMonthYear(startTime).month, getDayMonthYear(startTime).day,);
+    const _baseDirCsv = path.join(this._exportDir, year, month, day,);
     const csvFiles = await getFiles('**/*.csv', _baseDirCsv, this._maxScanFile, []);
     this._log.log(`Found {} csv file(s) in {}`, csvFiles.length, _baseDirCsv);
-
     const tasks = [];
     for (const wavFile of wavFiles) tasks.push(this.uploadTask(wavFile));
     for (const csvFile of csvFiles) tasks.push(this.uploadTask(csvFile));

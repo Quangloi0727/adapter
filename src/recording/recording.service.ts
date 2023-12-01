@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable, OnModuleDestroy, OnModuleInit } 
 import { ConfigService } from '@nestjs/config';
 import { CronJob } from 'cron';
 import { LoggerService } from '../shared/logging';
-import { LoggerFactory, SftpConfigService } from '../shared/providers';
+import { LoggerFactory, SftpService } from '../shared/providers';
 import axios from 'axios';
 import { IBodyRequest } from './recording.interface';
 import * as moment from 'moment';
@@ -12,7 +12,6 @@ import { existsSync, mkdirSync } from 'fs';
 import { getDayMonthYear } from '../utils/functions';
 import { RecordingStoreService } from './recording-store.service';
 import * as path from 'path';
-import * as SftpClient from 'ssh2-sftp-client';
 
 @Injectable()
 export class RecordingService implements OnModuleInit, OnModuleDestroy {
@@ -24,17 +23,14 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
   private readonly _tenantId: String;
   private readonly _maxResultCount: number;
   private readonly _exportDir: string;
-  private _sftp: SftpClient;
-  private _sftpConfigService;
 
   constructor(
     loggerFactory: LoggerFactory,
     private readonly _configService: ConfigService,
     private readonly _exportExcelService: ExportExcelService,
     private readonly _recordingStoreService: RecordingStoreService,
+    private readonly _sftpService: SftpService,
   ) {
-    this._sftpConfigService = new SftpConfigService(this._configService);
-    this._sftp = new SftpClient();
     this._log = loggerFactory.createLogger(RecordingService);
     const timeJob = this._configService.get("TIME_START_JOB") || '0 0 1 * * *';
     this._urlGetData = this._configService.get("URL_GET_DATA");
@@ -78,27 +74,10 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
       if (!dataGetFromCrm.length) return;
       await this._exportExcelService.exportFileCsv(dataGetFromCrm, body?.startTime);
       await this.downloadFileRecording(dataGetFromCrm, body?.startTime);
-      // call function connect when start push to sftp
-      await this.connectSftp({
-        host: this._sftpConfigService.host,
-        port: this._sftpConfigService.port,
-        username: this._sftpConfigService.username,
-        password: this._sftpConfigService.password,
-        privateKey: this._sftpConfigService.privateKey,
-        passphrase: this._sftpConfigService.passphrase,
-      });
+      await this._sftpService.getListOfFolders(this._configService.get("SFTP_BASE") || '/upload/manulife');
       setTimeout(async () => await this._recordingStoreService.uploadToServer(body?.startTime), 3000);
     } catch (e) {
       this._log.error(`Job error: ${e.message}`);
-    }
-  }
-
-  async connectSftp(config): Promise<any> {
-    try {
-      await this._sftp.connect(config);
-      this._log.info(`Reconnect sftp successful !`);
-    } catch (error) {
-      this._log.error(`Reconnect sftp error is: ${error.message}`);
     }
   }
 
@@ -128,7 +107,8 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
 
   async downloadFileRecording(datas, startTime?) {
     this._log.info(`Prefix recording is: ${this._prefixRecording}`);
-    const destinationPath = path.join(this._exportDir, getDayMonthYear(startTime).year, getDayMonthYear(startTime).month, getDayMonthYear(startTime).day, 'recording');
+    const { year, month, day } = getDayMonthYear(startTime);
+    const destinationPath = path.join(this._exportDir, year, month, day, 'recording');
     if (!existsSync(destinationPath)) mkdirSync(destinationPath, { recursive: true });
 
     const downloadPromises = datas.map(async (data) => {

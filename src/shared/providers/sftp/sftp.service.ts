@@ -8,6 +8,7 @@ import { Metadata, UploadStat } from './sftp.interface';
 import { getFileName, getRelPath, readFile } from '../../../utils/file.utils';
 import { isEmpty } from '@nestjs/common/utils/shared.utils';
 import { ConfigService } from '@nestjs/config';
+import { SftpOptionsFactory } from './sftp.options';
 
 @Injectable()
 export class SftpService {
@@ -20,7 +21,8 @@ export class SftpService {
     loggerFactory: LoggerFactory,
     sftpConfig: SftpConfigService,
     sftpService: SftpClientService,
-    private readonly _configService: ConfigService
+    private readonly _configService: ConfigService,
+    private readonly _sftpOptionsFactory: SftpOptionsFactory,
   ) {
     this._log = loggerFactory.createLogger(SftpService);
     this._sftpService = sftpService;
@@ -77,5 +79,26 @@ export class SftpService {
     if (!existsResult) return await this.mkdir(path);
 
     return true;
+  }
+
+  async getListOfFolders(path): Promise<string[]> {
+    try {
+      const foldersList = await this._sftpService.list(path);
+
+      return foldersList.map(item => item.name);
+    } catch (error) {
+      console.error('Get list path error is,', error);
+      await this.connectToSftp();
+    }
+  }
+
+  private async connectToSftp(): Promise<void> {
+    try {
+      const options = this._sftpOptionsFactory.createOptions();
+      await this._sftpService.connect(options);
+    } catch (error) {
+      console.error('Error connecting to SFTP:', error);
+      throw error;
+    }
   }
 }

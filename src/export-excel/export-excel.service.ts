@@ -43,13 +43,13 @@ export class ExportExcelService {
     }
 
     workSheet.addRows(data);
-
-    const dir = path.join(this._exportDir, getDayMonthYear(startTime).year, getDayMonthYear(startTime).month, getDayMonthYear(startTime).day);
+    const { year, month, day, valueOf } = getDayMonthYear(startTime);
+    const dir = path.join(this._exportDir, year, month, day);
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
-    await this._sftpService.mkdirIfNotExists(path.join(getDayMonthYear(startTime).year, getDayMonthYear(startTime).month, getDayMonthYear(startTime).day, 'recording'));
+    await this._sftpService.mkdirIfNotExists(path.join(year, month, day, 'recording'));
 
-    const filePath = path.join(dir, `${getDayMonthYear(startTime).valueOf.toString()}.csv`);
+    const filePath = path.join(dir, `${valueOf.toString()}.csv`);
     return workbook.xlsx.writeFile(filePath);
   }
 
