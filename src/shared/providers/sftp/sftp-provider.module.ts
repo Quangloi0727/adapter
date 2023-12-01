@@ -4,6 +4,7 @@ import { SftpConfigService } from './sftp-config.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SftpService } from './sftp.service';
 import { LoggerFactory, LoggerProviderModule } from '../logger';
+import { SftpOptionsFactory } from './sftp.options';
 
 @Global()
 @Module({
@@ -35,7 +36,7 @@ import { LoggerFactory, LoggerProviderModule } from '../logger';
       false,
     ),
   ],
-  providers: [SftpService, SftpConfigService],
+  providers: [SftpService, SftpConfigService, SftpOptionsFactory],
   exports: [SftpService, SftpConfigService],
 })
 export class SftpProviderModule {
