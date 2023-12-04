@@ -81,23 +81,23 @@ export class SftpService {
     return true;
   }
 
-  async getListOfFolders(path): Promise<string[]> {
+  async getListOfFolders(path: string): Promise<string[]> {
     try {
       const foldersList = await this._sftpService.list(path);
 
       return foldersList.map(item => item.name);
     } catch (error) {
-      console.error('Get list path error is,', error);
-      await this.connectToSftp();
+      this._log.error('Get list path error is,', error);
+      await this.resetConnection();
     }
   }
 
-  private async connectToSftp(): Promise<void> {
+  private async resetConnection(): Promise<void> {
     try {
       const options = this._sftpOptionsFactory.createOptions();
-      await this._sftpService.connect(options);
+      await this._sftpService.resetConnection(options);
     } catch (error) {
-      console.error('Error connecting to SFTP:', error);
+      this._log.error('Error connecting to SFTP:', error);
       throw error;
     }
   }
