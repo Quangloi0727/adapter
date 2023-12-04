@@ -1,10 +1,11 @@
 import * as moment from 'moment';
 
-export function getDayMonthYear() {
-    const day = moment(new Date()).subtract(1, 'days').format("DD");
-    const month = moment(new Date()).format("MM");
-    const year = moment(new Date()).format("YYYY");
-    const valueOf = moment(new Date()).valueOf();
+export function getDayMonthYear(startTime?) {
+    const timeSubTractOneDay = moment(new Date()).subtract(1, 'days').format("YYYY-MM-DD HH:mm:ss");
+    const day = moment(startTime ? startTime : timeSubTractOneDay).format("DD");
+    const month = moment(startTime ? startTime : timeSubTractOneDay).format("MM");
+    const year = moment(startTime ? startTime : timeSubTractOneDay).format("YYYY");
+    const valueOf = moment(startTime ? startTime : timeSubTractOneDay).valueOf();
     return {
         day, month, year, valueOf
     };

@@ -6,8 +6,8 @@ export class RecordingController {
   constructor(private readonly recordingService: RecordingService) { }
 
   @Post('')
-  runJob() {
-    return this.recordingService.startJob();
+  runJob(@Body() body: any) {
+    return this.recordingService.startJob(body);
   }
 
 }

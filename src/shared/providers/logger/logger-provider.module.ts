@@ -4,7 +4,7 @@ import * as moment from 'moment';
 import * as winston from 'winston';
 import { LoggerFactory } from './logger.factory';
 
-const parse = function(str: any, args = []) {
+const parse = function (str: any, args = []) {
   let i = 0;
 
   if (!str) return str;
@@ -51,7 +51,7 @@ const winstonPrintfFormat = winston.format.combine(
 @Module({
   imports: [
     LoggingModule.registerAsync({
-      level: process.env.LOG_LEVEL || 'info',
+      level: process.env.LOG_LEVEL || 'debug',
       levels: winston.config.syslog.levels,
       exitOnError: false,
       transports: [
@@ -69,12 +69,12 @@ const winstonPrintfFormat = winston.format.combine(
     {
       provide: LoggerService,
       useFactory: (loggerFactory: LoggerFactory) => {
-        return loggerFactory.createLogger('FSU');
+        return loggerFactory.createLogger('ADAPTER');
       },
       inject: [LoggerFactory],
     },
   ],
-  exports: [ LoggerFactory, LoggerService ],
+  exports: [LoggerFactory, LoggerService],
 })
 export class LoggerProviderModule {
 }

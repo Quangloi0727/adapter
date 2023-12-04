@@ -5,9 +5,10 @@ import { LoggerService } from 'src/shared/logging';
 import { LoggerFactory } from '../logger';
 import { SftpConfigService } from './sftp-config.service';
 import { Metadata, UploadStat } from './sftp.interface';
-import { getFileName, getRelPath, readFile } from 'src/utils/file.utils';
+import { getFileName, getRelPath, readFile } from '../../../utils/file.utils';
 import { isEmpty } from '@nestjs/common/utils/shared.utils';
 import { ConfigService } from '@nestjs/config';
+import { SftpOptionsFactory } from './sftp.options';
 
 @Injectable()
 export class SftpService {
@@ -20,7 +21,8 @@ export class SftpService {
     loggerFactory: LoggerFactory,
     sftpConfig: SftpConfigService,
     sftpService: SftpClientService,
-    private readonly _configService: ConfigService
+    private readonly _configService: ConfigService,
+    private readonly _sftpOptionsFactory: SftpOptionsFactory,
   ) {
     this._log = loggerFactory.createLogger(SftpService);
     this._sftpService = sftpService;
@@ -77,5 +79,26 @@ export class SftpService {
     if (!existsResult) return await this.mkdir(path);
 
     return true;
+  }
+
+  async getListOfFolders(path: string): Promise<string[]> {
+    try {
+      const foldersList = await this._sftpService.list(path);
+
+      return foldersList.map(item => item.name);
+    } catch (error) {
+      this._log.error('Get list path error is,', error);
+      await this.resetConnection();
+    }
+  }
+
+  private async resetConnection(): Promise<void> {
+    try {
+      const options = this._sftpOptionsFactory.createOptions();
+      await this._sftpService.resetConnection(options);
+    } catch (error) {
+      this._log.error('Error connecting to SFTP:', error);
+      throw error;
+    }
   }
 }

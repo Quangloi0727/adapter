@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable, OnModuleDestroy, OnModuleInit } 
 import { ConfigService } from '@nestjs/config';
 import { CronJob } from 'cron';
 import { LoggerService } from '../shared/logging';
-import { LoggerFactory } from '../shared/providers';
+import { LoggerFactory, SftpService } from '../shared/providers';
 import axios from 'axios';
 import { IBodyRequest } from './recording.interface';
 import * as moment from 'moment';
@@ -29,8 +29,8 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     private readonly _configService: ConfigService,
     private readonly _exportExcelService: ExportExcelService,
     private readonly _recordingStoreService: RecordingStoreService,
+    private readonly _sftpService: SftpService,
   ) {
-
     this._log = loggerFactory.createLogger(RecordingService);
     const timeJob = this._configService.get("TIME_START_JOB") || '0 0 1 * * *';
     this._urlGetData = this._configService.get("URL_GET_DATA");
@@ -54,13 +54,13 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  async startJob() {
+  async startJob(body?: any) {
     try {
       this._log.info('Job start !');
       let count = 0;
       let dataGetFromCrm = [];
       do {
-        const data = this.bodyRequest(count);
+        const data = this.bodyRequest(count, body?.startTime, body?.endTime);
         const headers = this.paramsHeader();
         const response = await axios.post(`${this._urlGetData}`, data, { headers });
         if (response?.data?.result?.length) {
@@ -72,20 +72,21 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
       } while (count !== 0);
       this._log.info(`Found ${dataGetFromCrm.length} data !`);
       if (!dataGetFromCrm.length) return;
-      await this._exportExcelService.exportFileCsv(dataGetFromCrm);
-      await this.downloadFileRecording(dataGetFromCrm);
-      setTimeout(async () => await this._recordingStoreService.uploadToServer(), 3000);
+      await this._exportExcelService.exportFileCsv(dataGetFromCrm, body?.startTime);
+      await this.downloadFileRecording(dataGetFromCrm, body?.startTime);
+      await this._sftpService.getListOfFolders(this._configService.get("SFTP_BASE") || '/upload/manulife');
+      setTimeout(async () => await this._recordingStoreService.uploadToServer(body?.startTime), 3000);
     } catch (e) {
       this._log.error(`Job error: ${e.message}`);
     }
   }
 
-  bodyRequest(page) {
+  bodyRequest(page, startTime?, endTime?) {
     const body: IBodyRequest = {
       maxResultCount: this._maxResultCount,
       skipCount: page * this._maxResultCount,
-      startTime: moment(new Date()).subtract(1, 'days').startOf('day').format("YYYY-MM-DD HH:mm:ss"),
-      endTime: moment(new Date()).subtract(1, 'days').endOf('day').format("YYYY-MM-DD HH:mm:ss")
+      startTime: startTime ? startTime : moment(new Date()).subtract(1, 'days').startOf('day').format("YYYY-MM-DD HH:mm:ss"),
+      endTime: endTime ? endTime : moment(new Date()).subtract(1, 'days').endOf('day').format("YYYY-MM-DD HH:mm:ss")
     };
     return body;
   }
@@ -104,20 +105,22 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     this._refreshJob.stop();
   }
 
-  async downloadFileRecording(datas) {
+  async downloadFileRecording(datas, startTime?) {
     this._log.info(`Prefix recording is: ${this._prefixRecording}`);
+    const { year, month, day } = getDayMonthYear(startTime);
+    const destinationPath = path.join(this._exportDir, year, month, day, 'recording');
+    if (!existsSync(destinationPath)) mkdirSync(destinationPath, { recursive: true });
 
     const downloadPromises = datas.map(async (data) => {
-      const { RecordingUrl } = data;
-      if (RecordingUrl && RecordingUrl !== '' && RecordingUrl !== null && RecordingUrl !== undefined) {
-        const response = await axios.get(`${this._prefixRecording}/${RecordingUrl}`, { responseType: 'stream' });
+      const { recordingUrl } = data;
+      if (recordingUrl && recordingUrl !== '' && recordingUrl !== null && recordingUrl !== undefined) {
+        const response = await axios.get(`${this._prefixRecording}/${recordingUrl}`, { responseType: 'stream' });
 
         if (response.status === 200) {
-          const destinationPath = path.join(this._exportDir, getDayMonthYear().year, getDayMonthYear().month, getDayMonthYear().day, 'recording');
           if (!existsSync(destinationPath)) mkdirSync(destinationPath, { recursive: true });
 
           await fs.ensureDir(destinationPath);
-          const fileName = RecordingUrl.split('/');
+          const fileName = recordingUrl.split('/');
 
           const writer = fs.createWriteStream(`${destinationPath}/${fileName[fileName.length - 1]}`);
           response.data.pipe(writer);

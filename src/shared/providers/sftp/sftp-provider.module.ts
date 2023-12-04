@@ -3,7 +3,8 @@ import { SftpModule as NestSftpModule } from 'nest-sftp';
 import { SftpConfigService } from './sftp-config.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SftpService } from './sftp.service';
-import { LoggerProviderModule } from '../logger';
+import { LoggerFactory, LoggerProviderModule } from '../logger';
+import { SftpOptionsFactory } from './sftp.options';
 
 @Global()
 @Module({
@@ -12,24 +13,30 @@ import { LoggerProviderModule } from '../logger';
     ConfigModule.forRoot(),
     NestSftpModule.forRootAsync(
       {
-        useFactory: (configService: ConfigService) => {
+        useFactory: (configService: ConfigService, loggerFactory: LoggerFactory) => {
+
+          const logger = loggerFactory.createLogger(SftpProviderModule);
+
           const sftpConfigService = new SftpConfigService(configService);
-          return {
+          const sftpConfig = {
             host: sftpConfigService.host,
             port: sftpConfigService.port,
             username: sftpConfigService.username,
             password: sftpConfigService.password,
             privateKey: sftpConfigService.privateKey,
             passphrase: sftpConfigService.passphrase,
+            debug: (msg: string, ...args: any) => logger.debug(msg, args)
           };
+
+          return sftpConfig;
         },
-        inject: [ConfigService],
-        imports: [ConfigModule.forRoot()],
+        inject: [ConfigService, LoggerFactory],
+        imports: [ConfigModule.forRoot(), LoggerProviderModule],
       },
       false,
     ),
   ],
-  providers: [SftpService, SftpConfigService],
+  providers: [SftpService, SftpConfigService, SftpOptionsFactory],
   exports: [SftpService, SftpConfigService],
 })
 export class SftpProviderModule {
