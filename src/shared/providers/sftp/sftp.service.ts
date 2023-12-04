@@ -9,6 +9,7 @@ import { getFileName, getRelPath, readFile } from '../../../utils/file.utils';
 import { isEmpty } from '@nestjs/common/utils/shared.utils';
 import { ConfigService } from '@nestjs/config';
 import { SftpOptionsFactory } from './sftp.options';
+import * as SftpClient from 'ssh2-sftp-client';
 
 @Injectable()
 export class SftpService {
@@ -16,6 +17,7 @@ export class SftpService {
   private readonly _uploadBaseDir: string;
   private readonly _sftpService: SftpClientService;
   private readonly _log: LoggerService;
+  private readonly sftp: any;
 
   constructor(
     loggerFactory: LoggerFactory,
@@ -28,6 +30,7 @@ export class SftpService {
     this._sftpService = sftpService;
     this._baseDir = this._configService.get('BASE_DIR');
     this._uploadBaseDir = sftpConfig.baseDir;
+    this.sftp = new SftpClient();
   }
 
   async mkdir(path: string): Promise<boolean> {
@@ -87,7 +90,7 @@ export class SftpService {
 
       return foldersList.map(item => item.name);
     } catch (error) {
-      console.error('Get list path error is,', error);
+      this._log.error('Get list path error is,', error);
       await this.connectToSftp();
     }
   }
@@ -95,9 +98,19 @@ export class SftpService {
   private async connectToSftp(): Promise<void> {
     try {
       const options = this._sftpOptionsFactory.createOptions();
+      await this._sftpService.resetConnection(options);
       await this._sftpService.connect(options);
+      this.sftp.on('connected', () => {
+        this._log.info('SFTP client connected !');
+      });
+
+      this.sftp.on('error', async (err) => {
+        console.error('SFTP client error:', err);
+        await this._sftpService.connect(options);
+      });
+
     } catch (error) {
-      console.error('Error connecting to SFTP:', error);
+      this._log.error('Error connecting to SFTP:', error);
       throw error;
     }
   }
