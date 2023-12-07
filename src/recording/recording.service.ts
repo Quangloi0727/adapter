@@ -74,7 +74,7 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
       if (!dataGetFromCrm.length) return;
       await this._exportExcelService.exportFileCsv(dataGetFromCrm, body?.startTime);
       await this.downloadFileRecording(dataGetFromCrm, body?.startTime);
-      await this._sftpService.getListOfFolders(this._configService.get("SFTP_BASE") || '/upload/manulife');
+      await this._sftpService.resetConnection();
       setTimeout(async () => await this._recordingStoreService.uploadToServer(body?.startTime), 3000);
     } catch (e) {
       this._log.error(`Job error: ${e.message}`);
