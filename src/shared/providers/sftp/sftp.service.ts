@@ -88,11 +88,10 @@ export class SftpService {
       return foldersList.map(item => item.name);
     } catch (error) {
       this._log.error('Get list path error is,', error);
-      await this.resetConnection();
     }
   }
 
-  private async resetConnection(): Promise<void> {
+  async resetConnection(): Promise<void> {
     try {
       const options = this._sftpOptionsFactory.createOptions();
       await this._sftpService.resetConnection(options);
