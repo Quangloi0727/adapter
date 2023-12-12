@@ -1,11 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { RecordingService } from './recording.service';
 
 @Controller('recording')
 export class RecordingController {
-  constructor(private readonly recordingService: RecordingService) { }
+  constructor(private readonly recordingService: RecordingService) {
+  }
 
-  @Post('')
+    @Post('')
   runJob(@Body() body: any) {
     return this.recordingService.startJob(body);
   }

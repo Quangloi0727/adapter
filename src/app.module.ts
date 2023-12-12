@@ -11,7 +11,7 @@ import { RecordingModule } from './recording/recording.module';
     ConfigModule.forRoot(),
     KafkaProviderModule,
     SftpProviderModule,
-    RecordingModule
+    RecordingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

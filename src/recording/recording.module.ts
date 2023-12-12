@@ -11,7 +11,7 @@ import { RecordingStoreService } from './recording-store.service';
     ConfigModule,
     LoggerProviderModule,
     ExportExcelModule,
-    SftpProviderModule
+    SftpProviderModule,
   ],
   controllers: [RecordingController],
   providers: [RecordingService, RecordingStoreService],
