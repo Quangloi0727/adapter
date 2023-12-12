@@ -18,26 +18,26 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
   private readonly _refreshJob: CronJob<null, RecordingService>;
   private _running = false;
   private readonly _log: LoggerService;
-  private readonly _urlGetData: String;
-  private readonly _prefixRecording: String;
-  private readonly _tenantId: String;
+  private readonly _urlGetData: string;
+  private readonly _prefixRecording: string;
+  private readonly _tenantId: string;
   private readonly _maxResultCount: number;
   private readonly _exportDir: string;
 
   constructor(
     loggerFactory: LoggerFactory,
-    private readonly _configService: ConfigService,
-    private readonly _exportExcelService: ExportExcelService,
-    private readonly _recordingStoreService: RecordingStoreService,
-    private readonly _sftpService: SftpService,
+        private readonly _configService: ConfigService,
+        private readonly _exportExcelService: ExportExcelService,
+        private readonly _recordingStoreService: RecordingStoreService,
+        private readonly _sftpService: SftpService,
   ) {
     this._log = loggerFactory.createLogger(RecordingService);
-    const timeJob = this._configService.get("TIME_START_JOB") || '0 0 1 * * *';
-    this._urlGetData = this._configService.get("URL_GET_DATA");
-    this._prefixRecording = this._configService.get("PREFIX_RECORDING");
-    this._tenantId = this._configService.get("TENANT_ID") || '102';
-    this._maxResultCount = this._configService.get("MAX_RESULT_COUNT") || 100;
-    this._exportDir = this._configService.get("EXPORT_DIR");
+    const timeJob = this._configService.get('TIME_START_JOB') || '0 0 1 * * *';
+    this._urlGetData = this._configService.get('URL_GET_DATA');
+    this._prefixRecording = this._configService.get('PREFIX_RECORDING');
+    this._tenantId = this._configService.get('TENANT_ID') || '102';
+    this._maxResultCount = this._configService.get('MAX_RESULT_COUNT') || 100;
+    this._exportDir = this._configService.get('EXPORT_DIR');
     this._refreshJob = CronJob.from({
       cronTime: timeJob,
       onTick: async () => {
@@ -74,8 +74,11 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
       if (!dataGetFromCrm.length) return;
       await this._exportExcelService.exportFileCsv(dataGetFromCrm, body?.startTime);
       await this.downloadFileRecording(dataGetFromCrm, body?.startTime);
-      await this._sftpService.resetConnection();
-      setTimeout(async () => await this._recordingStoreService.uploadToServer(body?.startTime), 3000);
+      if (await this._sftpService.forceConnection()) {
+        await this._recordingStoreService.uploadToServer(body?.startTime);
+      } else {
+        this._log.error('Cannot connect to server!');
+      }
     } catch (e) {
       this._log.error(`Job error: ${e.message}`);
     }
@@ -85,15 +88,17 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     const body: IBodyRequest = {
       maxResultCount: this._maxResultCount,
       skipCount: page * this._maxResultCount,
-      startTime: startTime ? startTime : moment(new Date()).subtract(1, 'days').startOf('day').format("YYYY-MM-DD HH:mm:ss"),
-      endTime: endTime ? endTime : moment(new Date()).subtract(1, 'days').endOf('day').format("YYYY-MM-DD HH:mm:ss")
+      startTime: startTime
+        ? startTime
+        : moment(new Date()).subtract(1, 'days').startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+      endTime: endTime ? endTime : moment(new Date()).subtract(1, 'days').endOf('day').format('YYYY-MM-DD HH:mm:ss'),
     };
     return body;
   }
 
   paramsHeader() {
     return {
-      'Cookie': `Abp.TenantId=${this._tenantId}`
+      Cookie: `Abp.TenantId=${this._tenantId}`,
     };
   }
 
@@ -111,7 +116,7 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     const destinationPath = path.join(this._exportDir, year, month, day, 'recording');
     if (!existsSync(destinationPath)) mkdirSync(destinationPath, { recursive: true });
 
-    const downloadPromises = datas.map(async (data) => {
+    const downloadPromises = datas.map(async data => {
       const { recordingUrl } = data;
       if (recordingUrl && recordingUrl !== '' && recordingUrl !== null && recordingUrl !== undefined) {
         const response = await axios.get(`${this._prefixRecording}/${recordingUrl}`, { responseType: 'stream' });

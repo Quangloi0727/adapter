@@ -31,14 +31,14 @@ export class ExportExcelService {
         top: { style: 'thin' },
         left: { style: 'thin' },
         bottom: { style: 'thin' },
-        right: { style: 'thin' }
+        right: { style: 'thin' },
       };
       workSheet.getRow(1).getCell(header.key).font = { bold: true };
 
       workSheet.getRow(1).getCell(header.key).fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'ADD8E6' }
+        fgColor: { argb: 'ADD8E6' },
       };
     }
 

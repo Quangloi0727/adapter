@@ -18,17 +18,15 @@ import { SftpOptionsFactory } from './sftp.options';
           const logger = loggerFactory.createLogger(SftpProviderModule);
 
           const sftpConfigService = new SftpConfigService(configService);
-          const sftpConfig = {
+          return {
             host: sftpConfigService.host,
             port: sftpConfigService.port,
             username: sftpConfigService.username,
             password: sftpConfigService.password,
             privateKey: sftpConfigService.privateKey,
             passphrase: sftpConfigService.passphrase,
-            debug: (msg: string, ...args: any) => logger.debug(msg, args)
+            debug: (msg: string, ...args: any) => logger.debug(msg, args),
           };
-
-          return sftpConfig;
         },
         inject: [ConfigService, LoggerFactory],
         imports: [ConfigModule.forRoot(), LoggerProviderModule],
