@@ -15,21 +15,21 @@ export interface SftpOptions {
 @Injectable()
 export class SftpOptionsFactory {
 
-    private readonly _sftpConfigService: SftpConfigService;
+  private readonly _sftpConfigService: SftpConfigService;
 
-    constructor(configService: ConfigService) {
-        this._sftpConfigService = new SftpConfigService(configService);
-    }
+  constructor(configService: ConfigService) {
+    this._sftpConfigService = new SftpConfigService(configService);
+  }
 
-    createOptions(): SftpOptions {
-        return {
-            host: this._sftpConfigService.host,
-            port: this._sftpConfigService.port,
-            username: this._sftpConfigService.username,
-            password: this._sftpConfigService.password,
-            privateKey: this._sftpConfigService.privateKey,
-            passphrase: this._sftpConfigService.passphrase,
-        };
-    }
+  createOptions(): SftpOptions {
+    return {
+      host: this._sftpConfigService.host,
+      port: this._sftpConfigService.port,
+      username: this._sftpConfigService.username,
+      password: this._sftpConfigService.password,
+      privateKey: this._sftpConfigService.privateKey,
+      passphrase: this._sftpConfigService.passphrase,
+    };
+  }
 
 }

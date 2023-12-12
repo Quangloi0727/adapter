@@ -30,10 +30,10 @@ export class RecordingStoreService {
     private readonly _configService: ConfigService
   ) {
     this._log = loggerFactory.createLogger(RecordingStoreService);
-    this._maxScanFile = this._configService.get("MAX_SCAN_FILE") || 1024;
-    this._batchSize = this._configService.get("BATCH_SIZE") || 10;
-    this._batchDelayMs = this._configService.get("BATCH_DELAY_MS") || 1000;
-    this._exportDir = this._configService.get("EXPORT_DIR");
+    this._maxScanFile = this._configService.get('MAX_SCAN_FILE') || 1024;
+    this._batchSize = this._configService.get('BATCH_SIZE') || 10;
+    this._batchDelayMs = this._configService.get('BATCH_DELAY_MS') || 1000;
+    this._exportDir = this._configService.get('EXPORT_DIR');
   }
 
   uploadTask(path: string, key?: string): Promise<UploadStats> {

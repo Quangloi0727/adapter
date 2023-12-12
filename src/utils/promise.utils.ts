@@ -43,9 +43,9 @@ export async function settledAll<T>(
   return !taskResults.length
     ? []
     : taskResults.reduce((prev, curr) => ({
-        success: [...prev.success, ...curr.success],
-        error: [...prev.error, ...curr.error],
-      }));
+      success: [...prev.success, ...curr.success],
+      error: [...prev.error, ...curr.error],
+    }));
 }
 
 function settledResult(tasks: Array<{ status: string; value?: any; reason?: any }>): {

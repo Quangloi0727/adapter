@@ -25,7 +25,7 @@ import { SftpOptionsFactory } from './sftp.options';
             password: sftpConfigService.password,
             privateKey: sftpConfigService.privateKey,
             passphrase: sftpConfigService.passphrase,
-            debug: (msg: string, ...args: any) => logger.debug(msg, args)
+            debug: (msg: string, ...args: any) => logger.debug(msg, args),
           };
 
           return sftpConfig;

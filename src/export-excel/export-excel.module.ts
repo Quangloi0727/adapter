@@ -5,6 +5,6 @@ import { ConfigModule } from '@nestjs/config';
 @Module({
   imports: [ConfigModule],
   providers: [ExportExcelService],
-  exports: [ExportExcelService]
+  exports: [ExportExcelService],
 })
 export class ExportExcelModule { }
