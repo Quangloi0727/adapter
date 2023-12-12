@@ -74,8 +74,11 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
       if (!dataGetFromCrm.length) return;
       await this._exportExcelService.exportFileCsv(dataGetFromCrm, body?.startTime);
       await this.downloadFileRecording(dataGetFromCrm, body?.startTime);
-      await this._sftpService.resetConnection();
-      setTimeout(async () => await this._recordingStoreService.uploadToServer(body?.startTime), 3000);
+      if (await this._sftpService.forceConnection()) {
+        await this._recordingStoreService.uploadToServer(body?.startTime);
+      } else {
+        this._log.error('Cannot connect to server!');
+      }
     } catch (e) {
       this._log.error(`Job error: ${e.message}`);
     }

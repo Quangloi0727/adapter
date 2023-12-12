@@ -8,7 +8,7 @@ import { Metadata, UploadStat } from './sftp.interface';
 import { getFileName, getRelPath, readFile } from '../../../utils/file.utils';
 import { isEmpty } from '@nestjs/common/utils/shared.utils';
 import { ConfigService } from '@nestjs/config';
-import { SftpOptionsFactory } from './sftp.options';
+import { SftpOptions, SftpOptionsFactory } from './sftp.options';
 
 @Injectable()
 export class SftpService {
@@ -17,17 +17,22 @@ export class SftpService {
   private readonly _sftpService: SftpClientService;
   private readonly _log: LoggerService;
 
+  private readonly _sftpOptions: SftpOptions;
+
   constructor(
     loggerFactory: LoggerFactory,
     sftpConfig: SftpConfigService,
     sftpService: SftpClientService,
-    private readonly _configService: ConfigService,
-    private readonly _sftpOptionsFactory: SftpOptionsFactory,
+    sftpOptionsFactory: SftpOptionsFactory,
+        private readonly _configService: ConfigService,
+        private readonly _sftpOptionsFactory: SftpOptionsFactory,
   ) {
     this._log = loggerFactory.createLogger(SftpService);
     this._sftpService = sftpService;
     this._baseDir = this._configService.get('BASE_DIR');
     this._uploadBaseDir = sftpConfig.baseDir;
+
+    this._sftpOptions = sftpOptionsFactory.createOptions();
   }
 
   async mkdir(path: string): Promise<boolean> {
@@ -89,6 +94,33 @@ export class SftpService {
     } catch (error) {
       this._log.error('Get list path error is,', error);
     }
+  }
+
+  async forceConnection(): Promise<boolean> {
+    const listFn = async () => {
+      try {
+        const ls = await this._sftpService.list('/');
+
+        return ls && ls.length > 0;
+      } catch (e) {
+        if ('ETIMEDOUT' === e['code'] || 'ERR_GENERIC_CLIENT' == e['code'] || 'ERR_NOT_CONNECTED' === e['code']) {
+          try {
+            await this._sftpService.connect(this._sftpOptions);
+          } catch (e1) {
+            try {
+              await this._sftpService.resetConnection(this._sftpOptions);
+            } catch (e2) {
+              return await listFn();
+            }
+          }
+          return await listFn();
+        } else {
+          throw e;
+        }
+      }
+    };
+
+    return Promise.resolve(await listFn());
   }
 
   async resetConnection(): Promise<void> {
