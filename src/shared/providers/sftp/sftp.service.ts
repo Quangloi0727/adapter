@@ -99,7 +99,9 @@ export class SftpService {
   async forceConnection(): Promise<boolean> {
     const listFn = async () => {
       try {
+        this._log.error(`Try to connect to sftp server with options: ${JSON.stringify(this._sftpOptions)}`);
         const ls = await this._sftpService.list('/');
+        console.log(`${new Date()} Day la ls: `, ls);
 
         return ls && ls.length > 0;
       } catch (e) {
