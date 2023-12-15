@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { SftpClientService } from 'nest-sftp';
 import { dirname, join } from 'path';
 import { LoggerService } from 'src/shared/logging';
@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { SftpOptions, SftpOptionsFactory } from './sftp.options';
 
 @Injectable()
-export class SftpService {
+export class SftpService implements OnApplicationBootstrap {
   private readonly _baseDir: string;
   private readonly _uploadBaseDir: string;
   private readonly _sftpService: SftpClientService;
@@ -19,20 +19,31 @@ export class SftpService {
 
   private readonly _sftpOptions: SftpOptions;
 
+  private _alive = false;
+
   constructor(
     loggerFactory: LoggerFactory,
     sftpConfig: SftpConfigService,
     sftpService: SftpClientService,
     sftpOptionsFactory: SftpOptionsFactory,
-        private readonly _configService: ConfigService,
-        private readonly _sftpOptionsFactory: SftpOptionsFactory,
+    configService: ConfigService,
   ) {
     this._log = loggerFactory.createLogger(SftpService);
     this._sftpService = sftpService;
-    this._baseDir = this._configService.get('BASE_DIR');
+    this._baseDir = configService.get('BASE_DIR');
     this._uploadBaseDir = sftpConfig.baseDir;
 
     this._sftpOptions = sftpOptionsFactory.createOptions();
+  }
+
+  get alive() {
+    return this._alive;
+  }
+
+  async onApplicationBootstrap() {
+    setInterval(async () => {
+      this._alive = await this.keepalive();
+    }, this._sftpOptions.keepaliveInterval);
   }
 
   async mkdir(path: string): Promise<boolean> {
@@ -99,7 +110,9 @@ export class SftpService {
   async forceConnection(): Promise<boolean> {
     const listFn = async () => {
       try {
+        this._log.error(`Try to connect to sftp server with options: ${JSON.stringify(this._sftpOptions)}`);
         const ls = await this._sftpService.list('/');
+        console.log(`${new Date()} Day la ls: `, ls);
 
         return ls && ls.length > 0;
       } catch (e) {
@@ -123,13 +136,18 @@ export class SftpService {
     return Promise.resolve(await listFn());
   }
 
-  async resetConnection(): Promise<void> {
+  async keepalive() {
     try {
-      const options = this._sftpOptionsFactory.createOptions();
-      await this._sftpService.resetConnection(options);
-    } catch (error) {
-      this._log.error('Error connecting to SFTP:', error);
-      throw error;
+      const stats = await this._sftpService.stat('/');
+      if (stats) {
+        this._log.info(`Keepalive to sftp server successfully!`);
+
+        return true;
+      }
+    } catch (e) {
+      this._log.error(`Cannot keepalive to sftp server. Error ${e?.message}`);
     }
+
+    return false;
   }
 }

@@ -14,19 +14,23 @@ import { SftpOptionsFactory } from './sftp.options';
     NestSftpModule.forRootAsync(
       {
         useFactory: (configService: ConfigService, loggerFactory: LoggerFactory) => {
-
           const logger = loggerFactory.createLogger(SftpProviderModule);
-
           const sftpConfigService = new SftpConfigService(configService);
-          return {
+          const opts = {
             host: sftpConfigService.host,
             port: sftpConfigService.port,
             username: sftpConfigService.username,
             password: sftpConfigService.password,
             privateKey: sftpConfigService.privateKey,
             passphrase: sftpConfigService.passphrase,
-            debug: (msg: string, ...args: any) => logger.debug(msg, args),
           };
+
+          if (sftpConfigService.debug) {
+            logger.log(`SFTP debug enabled`);
+            opts['debug'] = (msg: string, ...args: any) => logger.debug(msg, args);
+          }
+
+          return opts;
         },
         inject: [ConfigService, LoggerFactory],
         imports: [ConfigModule.forRoot(), LoggerProviderModule],

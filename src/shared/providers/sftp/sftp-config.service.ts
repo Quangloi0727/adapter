@@ -38,4 +38,15 @@ export class SftpConfigService {
   get passphrase(): string {
     return this._configService.get<string>('SFTP_PASSPHRASE');
   }
+
+  get debug(): boolean {
+    const _debug = this._configService.get('SFTP_DEBUG', false);
+    if (typeof(_debug) === 'string') return _debug.toLowerCase() === 'true';
+
+    return _debug;
+  }
+
+  get keepaliveInterval(): number {
+    return this._configService.get<number>('SFTP_KEEPALIVE_INTERVAL', 10000);
+  }
 }

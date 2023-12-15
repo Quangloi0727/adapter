@@ -10,6 +10,8 @@ export interface SftpOptions {
     privateKey?: string;
     passphrase?: string;
     autoConnect?: boolean;
+    debug?: boolean;
+    keepaliveInterval: number;
 }
 
 @Injectable()
@@ -29,6 +31,8 @@ export class SftpOptionsFactory {
       password: this._sftpConfigService.password,
       privateKey: this._sftpConfigService.privateKey,
       passphrase: this._sftpConfigService.passphrase,
+      debug: this._sftpConfigService.debug || false,
+      keepaliveInterval: Math.abs(this._sftpConfigService.keepaliveInterval || 10000),
     };
   }
 
