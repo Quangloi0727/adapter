@@ -28,9 +28,7 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     loggerFactory: LoggerFactory,
         private readonly _configService: ConfigService,
         private readonly _exportExcelService: ExportExcelService,
-        private readonly _recordingStoreService: RecordingStoreService,
-        private readonly _sftpService: SftpService,
-  ) {
+        private readonly _recordingStoreService: RecordingStoreService) {
     this._log = loggerFactory.createLogger(RecordingService);
     const timeJob = this._configService.get('TIME_START_JOB') || '0 0 1 * * *';
     this._urlGetData = this._configService.get('URL_GET_DATA');
@@ -73,12 +71,12 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
       this._log.info(`Found ${dataGetFromCrm.length} data !`);
       if (!dataGetFromCrm.length) return;
       await this._exportExcelService.exportFileCsv(dataGetFromCrm, body?.startTime);
+
+      this._log.info(`Start download recording files!`);
       await this.downloadFileRecording(dataGetFromCrm, body?.startTime);
-      if (await this._sftpService.forceConnection()) {
-        await this._recordingStoreService.uploadToServer(body?.startTime);
-      } else {
-        this._log.error('Cannot connect to server!');
-      }
+
+      this._log.info(`Start upload files!`);
+      await this._recordingStoreService.uploadToServer(body?.startTime);
     } catch (e) {
       this._log.error(`Job error: ${e.message}`);
     }
@@ -127,7 +125,7 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
           await fs.ensureDir(destinationPath);
           const fileName = recordingUrl.split('/');
 
-          const writer = fs.createWriteStream(`${destinationPath}/${fileName[fileName.length - 1]}`);
+          const writer = fs.createWriteStream(path.join(destinationPath, fileName[fileName.length - 1]));
           response.data.pipe(writer);
 
           return new Promise((resolve, reject) => {

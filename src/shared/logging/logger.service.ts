@@ -12,6 +12,10 @@ export class LoggerService implements BaseLoggerService {
     this.marker = marker;
   }
 
+  isDebugEnabled(): boolean {
+    return this.logger.isDebugEnabled();
+  }
+
   debug(message: any, ...args: any[]): any {
     if (this.logger.isDebugEnabled()) {
       this.logger.debug(message, { marker: this.marker, args });
