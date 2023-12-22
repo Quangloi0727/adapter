@@ -3,4 +3,5 @@ export interface IBodyRequest {
     skipCount: number;
     startTime: string;
     endTime: string;
+    hasAgrregateTicket: boolean;
 }
