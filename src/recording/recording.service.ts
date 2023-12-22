@@ -23,12 +23,13 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
   private readonly _tenantId: string;
   private readonly _maxResultCount: number;
   private readonly _exportDir: string;
+  private readonly hasAgrregateTicket: boolean;
 
   constructor(
     loggerFactory: LoggerFactory,
-        private readonly _configService: ConfigService,
-        private readonly _exportExcelService: ExportExcelService,
-        private readonly _recordingStoreService: RecordingStoreService) {
+    private readonly _configService: ConfigService,
+    private readonly _exportExcelService: ExportExcelService,
+    private readonly _recordingStoreService: RecordingStoreService) {
     this._log = loggerFactory.createLogger(RecordingService);
     const timeJob = this._configService.get('TIME_START_JOB') || '0 0 1 * * *';
     this._urlGetData = this._configService.get('URL_GET_DATA');
@@ -36,6 +37,7 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     this._tenantId = this._configService.get('TENANT_ID') || '102';
     this._maxResultCount = this._configService.get('MAX_RESULT_COUNT') || 100;
     this._exportDir = this._configService.get('EXPORT_DIR');
+    this.hasAgrregateTicket = this._configService.get('HAS_AGGREGATE_TICKET');
     this._refreshJob = CronJob.from({
       cronTime: timeJob,
       onTick: async () => {
@@ -90,6 +92,7 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
         ? startTime
         : moment(new Date()).subtract(1, 'days').startOf('day').format('YYYY-MM-DD HH:mm:ss'),
       endTime: endTime ? endTime : moment(new Date()).subtract(1, 'days').endOf('day').format('YYYY-MM-DD HH:mm:ss'),
+      hasAgrregateTicket: Boolean(this.hasAgrregateTicket)
     };
     return body;
   }
