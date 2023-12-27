@@ -24,12 +24,15 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
   private readonly _maxResultCount: number;
   private readonly _exportDir: string;
   private readonly hasAgrregateTicket: boolean;
+  private readonly _batchSize: number;
+  private readonly _batchDelayMs: number;
 
   constructor(
     loggerFactory: LoggerFactory,
     private readonly _configService: ConfigService,
     private readonly _exportExcelService: ExportExcelService,
-    private readonly _recordingStoreService: RecordingStoreService) {
+    private readonly _recordingStoreService: RecordingStoreService
+  ) {
     this._log = loggerFactory.createLogger(RecordingService);
     const timeJob = this._configService.get('TIME_START_JOB') || '0 0 1 * * *';
     this._urlGetData = this._configService.get('URL_GET_DATA');
@@ -38,6 +41,8 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     this._maxResultCount = this._configService.get('MAX_RESULT_COUNT') || 100;
     this._exportDir = this._configService.get('EXPORT_DIR');
     this.hasAgrregateTicket = this._configService.get('HAS_AGGREGATE_TICKET');
+    this._batchSize = this._configService.get('BATCH_SIZE') || 10;
+    this._batchDelayMs = this._configService.get('BATCH_DELAY_MS') || 1000;
     this._refreshJob = CronJob.from({
       cronTime: timeJob,
       onTick: async () => {
@@ -142,10 +147,22 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     });
 
     try {
-      await Promise.all(downloadPromises);
+      this._log.info(`Start download ${downloadPromises.length} files !`);
+      await this.downloadWithDelay(downloadPromises, this._batchSize, this._batchDelayMs);
       this._log.info('All downloads completed successfully.');
     } catch (error) {
-      this._log.error(`An error occurred during download: ${error?.response?.statusText}`);
+      this._log.error(`An error occurred during download: ${error?.message}`);
     }
   }
+
+  async downloadWithDelay(downloadPromises, chunkSize, delay) {
+    for (let i = 0; i < downloadPromises.length; i += chunkSize) {
+      const chunk = downloadPromises.slice(i, i + chunkSize);
+      await Promise.all(chunk);
+      if (i + chunkSize < downloadPromises.length) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
 }
