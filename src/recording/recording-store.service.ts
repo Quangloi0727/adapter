@@ -7,9 +7,8 @@ import { SftpService } from '../shared/providers';
 import { getFileName, getFiles } from '../utils/file.utils';
 import { getDayMonthYear } from '../utils/functions';
 import { ConfigService } from '@nestjs/config';
-import { settledAll } from '../utils/promise.utils';
+import { snooze } from '../utils/promise.utils';
 import * as path from 'path';
-
 export interface UploadStats {
   key: string;
   relPath: string;
@@ -78,25 +77,22 @@ export class RecordingStoreService {
     const _baseDirCsv = path.join(this._exportDir, year, month, day,);
     const csvFiles = await getFiles('**/*.csv', _baseDirCsv, this._maxScanFile, []);
     this._log.log(`Found {} csv file(s) in {}`, csvFiles.length, _baseDirCsv);
-    const tasks = [];
-    for (const wavFile of wavFiles) tasks.push(this.uploadTask(wavFile));
-    for (const csvFile of csvFiles) tasks.push(this.uploadTask(csvFile));
+    for (const csvFile of csvFiles) await this.uploadTask(csvFile);
 
-    await settledAll<UploadStats>(tasks, this._batchSize, this._batchDelayMs, async data => {
-      const { success, error } = data;
+    const uploadPromises = [];
 
-      if (error?.length) {
-        this._log.error(
-          `Cannot upload ${error?.length} recording(s). Trace ${error?.map(e => {
-            return JSON.stringify({
-              path: e.name,
-              message: e.message,
-            });
-          })}`,
-        );
+    let counter = 0;
+    for (let i = 0; i < wavFiles.length; i++) {
+      uploadPromises.push(this.uploadTask(wavFiles[i]));
+      counter++;
+
+      if (counter === Number(this._batchSize) || i === uploadPromises.length - 1) {
+        await Promise.allSettled(uploadPromises);
+        await snooze(this._batchDelayMs < 0 ? 0 : Number(this._batchDelayMs));
+
+        counter = 0;
+        uploadPromises.length = 0;
       }
-
-      this._log.info(`Uploaded ${success?.length} recording(s) to remote`);
-    });
+    }
   }
 }

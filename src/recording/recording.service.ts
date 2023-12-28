@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable, OnModuleDestroy, OnModuleInit } 
 import { ConfigService } from '@nestjs/config';
 import { CronJob } from 'cron';
 import { LoggerService } from '../shared/logging';
-import { LoggerFactory, SftpService } from '../shared/providers';
+import { LoggerFactory } from '../shared/providers';
 import axios from 'axios';
 import { IBodyRequest } from './recording.interface';
 import * as moment from 'moment';
@@ -12,6 +12,7 @@ import { existsSync, mkdirSync } from 'fs';
 import { getDayMonthYear } from '../utils/functions';
 import { RecordingStoreService } from './recording-store.service';
 import * as path from 'path';
+import {  snooze } from 'src/utils/promise.utils';
 
 @Injectable()
 export class RecordingService implements OnModuleInit, OnModuleDestroy {
@@ -122,7 +123,25 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     const destinationPath = path.join(this._exportDir, year, month, day, 'recording');
     if (!existsSync(destinationPath)) mkdirSync(destinationPath, { recursive: true });
 
-    const downloadPromises = datas.map(async data => {
+    const downloadPromises = [];
+
+    let counter = 0;
+    for (let i = 0; i < datas.length; i++) {
+      downloadPromises.push(this._downloadTask(destinationPath, datas[i]));
+      counter++;
+
+      if (counter === Number(this._batchSize) || i === datas.length - 1) {
+        await Promise.allSettled(downloadPromises);
+        await snooze(this._batchDelayMs < 0 ? 0 : Number(this._batchDelayMs));
+
+        counter = 0;
+        downloadPromises.length = 0;
+      }
+    }
+  }
+
+  private async _downloadTask(destinationPath: string, data: { recordingUrl: string; }): Promise<string> {
+    return await new Promise(async (resolve, reject) => {
       const { recordingUrl } = data;
       if (recordingUrl && recordingUrl !== '' && recordingUrl !== null && recordingUrl !== undefined) {
         const response = await axios.get(`${this._prefixRecording}/${recordingUrl}`, { responseType: 'stream' });
@@ -136,33 +155,13 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
           const writer = fs.createWriteStream(path.join(destinationPath, fileName[fileName.length - 1]));
           response.data.pipe(writer);
 
-          return new Promise((resolve, reject) => {
-            writer.on('finish', resolve);
-            writer.on('error', reject);
-          });
+          writer.on('finish', resolve);
+          writer.on('error', reject);
         } else {
-          throw new HttpException(`Failed to download the file `, HttpStatus.INTERNAL_SERVER_ERROR);
+          reject(new HttpException(`Failed to download the file `, HttpStatus.INTERNAL_SERVER_ERROR));
         }
       }
     });
-
-    try {
-      this._log.info(`Start download ${downloadPromises.length} files !`);
-      await this.downloadWithDelay(downloadPromises, this._batchSize, this._batchDelayMs);
-      this._log.info('All downloads completed successfully.');
-    } catch (error) {
-      this._log.error(`An error occurred during download: ${error?.message}`);
-    }
-  }
-
-  async downloadWithDelay(downloadPromises, chunkSize, delay) {
-    for (let i = 0; i < downloadPromises.length; i += chunkSize) {
-      const chunk = downloadPromises.slice(i, i + chunkSize);
-      await Promise.all(chunk);
-      if (i + chunkSize < downloadPromises.length) {
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-    }
   }
 
 }
