@@ -13,6 +13,7 @@ import { getDayMonthYear } from '../utils/functions';
 import { RecordingStoreService } from './recording-store.service';
 import * as path from 'path';
 import {  snooze } from 'src/utils/promise.utils';
+import { getFileName } from 'src/utils/file.utils';
 
 @Injectable()
 export class RecordingService implements OnModuleInit, OnModuleDestroy {
@@ -144,22 +145,32 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     return await new Promise(async (resolve, reject) => {
       const { recordingUrl } = data;
       if (recordingUrl && recordingUrl !== '' && recordingUrl !== null && recordingUrl !== undefined) {
-        const response = await axios.get(`${this._prefixRecording}/${recordingUrl}`, { responseType: 'stream' });
+        try {
+          const response = await axios.get(`${this._prefixRecording}/${recordingUrl}`, { responseType: 'stream' });
 
-        if (response.status === 200) {
-          if (!existsSync(destinationPath)) mkdirSync(destinationPath, { recursive: true });
+          if (response.status === 200) {
+            if (!existsSync(destinationPath)) mkdirSync(destinationPath, { recursive: true });
 
-          await fs.ensureDir(destinationPath);
-          const fileName = recordingUrl.split('/');
+            await fs.ensureDir(destinationPath);
+            const fileName = getFileName(recordingUrl);
 
-          const writer = fs.createWriteStream(path.join(destinationPath, fileName[fileName.length - 1]));
-          response.data.pipe(writer);
+            const writer = fs.createWriteStream(path.join(destinationPath, fileName));
+            response.data.pipe(writer);
 
-          writer.on('finish', resolve);
-          writer.on('error', reject);
-        } else {
-          reject(new HttpException(`Failed to download the file `, HttpStatus.INTERNAL_SERVER_ERROR));
+            writer.on('finish', resolve);
+            writer.on('error', (err) => {
+              this._log.error(`Cannot download file ${recordingUrl}. Cause: ${err.message}`);
+
+              reject(err);
+            });
+          } else {
+            reject(new HttpException(`Failed to download the file `, HttpStatus.INTERNAL_SERVER_ERROR));
+          }
+        } catch (error) {
+          this._log.error(`Cannot download file ${recordingUrl}. Catch: ${error.message}`);
+          reject(error);
         }
+
       }
     });
   }
