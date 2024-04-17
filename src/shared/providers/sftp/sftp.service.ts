@@ -146,6 +146,7 @@ export class SftpService implements OnApplicationBootstrap {
       }
     } catch (e) {
       this._log.error(`Cannot keepalive to sftp server. Error ${e?.message}`);
+      await this.forceConnection();
     }
 
     return false;
